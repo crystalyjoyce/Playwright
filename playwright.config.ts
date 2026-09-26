@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: '.',
+  testMatch: '**/*.spec.ts',
 
   // Run tests in parallel
   fullyParallel: false,
@@ -19,9 +20,12 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    // Slow down actions for demo
+    // Base URL for web navigation
+    baseURL: 'http://localhost:5175',
+
+    // Optional slowMo for demo runs, default 0 for faster test executions
     launchOptions: {
-      slowMo: 30000,
+      slowMo: process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 0,
     },
 
     // Save trace when needed
