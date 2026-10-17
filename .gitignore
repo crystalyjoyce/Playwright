@@ -1,14 +1,16 @@
 
-# Playwright
+# Playwright & Node
 node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
-
-.env
-node_modules/
-playwright-report/
+**/node_modules/
 test-results/
-.env
+**/test-results/
+playwright-report/
+**/playwright-report/
+blob-report/
+**/blob-report/
+playwright/.cache/
+**/playwright/.cache/
+playwright/.auth/
+**/playwright/.auth/
+.DS_Store
+Thumbs.db

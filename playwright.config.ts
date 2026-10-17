@@ -3,12 +3,16 @@ import path from 'path';
 
 const REPO_ROOT = 'C:/Users/Crystalyn Joyce/Downloads/tesda/FOMS-System-Repository';
 
-/**
- * Playwright Config for ITE Capstone E2E Regression Suite
- */
 export default defineConfig({
-  testDir: path.join(__dirname, 'tests'),
-  testIgnore: '**/tests/example.spec.ts',
+  testDir: __dirname,
+  testMatch: [
+    'tests/**/*.spec.ts',
+    'TESTS/**/*.spec.ts',
+    'ai layer/**/*.spec.ts',
+    'collection/**/*.spec.ts',
+    'speedpay/**/*.spec.ts',
+  ],
+  testIgnore: '**/example.spec.ts',
   globalSetup: path.join(__dirname, 'tests/config/globalSetup.ts'),
   timeout: 60000,
   expect: {
@@ -22,19 +26,24 @@ export default defineConfig({
   use: {
     actionTimeout: 10000,
     navigationTimeout: 30000,
+    baseURL: 'http://localhost:5175',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-
-  /* Configure projects */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
-
-  /* Auto-start local dev servers with explicit host binding and strict port */
   webServer: [
     {
       command: 'npx vite --host 0.0.0.0 --port 5176 --strictPort',

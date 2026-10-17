@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('http://localhost:5175/login');
+  await page.getByRole('textbox', { name: 'EMP-' }).click();
+  await page.getByRole('textbox', { name: 'EMP-' }).fill('EMP-003');
+  await page.getByRole('button', { name: 'LOG IN TO SYSTEM' }).click();
+  await page.getByRole('link', { name: ' Collection Priorities Pin' }).click();
+  await page.getByRole('button', { name: 'Review Recommendation' }).first().click();
+  await page.getByRole('textbox', { name: 'e.g. Sent payment reminder' }).click();
+  await page.getByRole('textbox', { name: 'e.g. Sent payment reminder' }).fill('needed action');
+  await page.getByRole('button', { name: 'Log Decision' }).click();
+  await page.getByRole('link', { name: ' Review History Pin to top' }).nth(1).click();
+  await page.getByRole('button', { name: 'M Maria Mariel Jane Anonuevo' }).click();
+  await page.getByRole('button', { name: ' Log Out' }).click();
+  await page.getByRole('textbox', { name: 'EMP-' }).click();
+  await page.getByRole('textbox', { name: 'EMP-' }).fill('EMP-002');
+  await page.getByRole('button', { name: 'LOG IN TO SYSTEM' }).click();
+  await page.getByRole('link', { name: ' For Review Pin to top Review' }).click();
+  await page.locator('td:nth-child(9) > button').first().click();
+  await page.getByRole('combobox').nth(1).selectOption('Reviewed & Closed');
+  await page.getByRole('combobox').nth(1).selectOption('Accepted as Recommendation');
+  await page.getByRole('textbox', { name: 'e.g. Sent payment reminder' }).click();
+  await page.getByRole('textbox', { name: 'e.g. Sent payment reminder' }).fill('okay, reviewed');
+  await page.getByRole('button', { name: 'Log Decision' }).click();
+  await page.getByRole('button', { name: 'M Misty Head Accountant ' }).click();
+  await page.getByRole('button', { name: ' Log Out' }).click();
+  await page.getByRole('textbox', { name: 'EMP-' }).click();
+  await page.getByRole('textbox', { name: 'EMP-' }).fill('EMP-003');
+  await page.getByRole('button', { name: 'LOG IN TO SYSTEM' }).click();
+  await page.getByRole('link', { name: ' Review History Pin to top' }).nth(1).click();
+  await page.getByRole('button', { name: 'Refresh Data' }).click();
+});
