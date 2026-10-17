@@ -94,7 +94,7 @@ test('Submit a demo payment and verify it is pending validation', async ({ page 
   await page.getByRole('button', { name: /Simulate Payment Success/i }).click();
 
   await expect(page.getByRole('heading', { name: 'Upload Proof of Payment' })).toBeVisible();
-  await page.locator('input[type="file"]').last().setInputFiles(join(__dirname, 'speedpay.png'));
+  await page.locator('input[type="file"]').last().setInputFiles(join(__dirname, '..', 'fixtures', 'speedpay.png'));
   await expect(page.getByText(/Image is clear and the payment amount matches the invoice/i)).toBeVisible();
   await page.getByRole('button', { name: 'Submit Proof of Payment' }).click();
 
