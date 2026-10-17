@@ -6,6 +6,8 @@
   "scripts": {
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:collab": "playwright test tests/ai-duplication.spec.ts tests/ai-recommendation-risk-register.spec.ts tests/client-payment-workflow.spec.ts tests/ITE.spec.ts tests/security-access-controls.spec.ts",
+    "test:collab:headed": "playwright test tests/ai-duplication.spec.ts tests/ai-recommendation-risk-register.spec.ts tests/client-payment-workflow.spec.ts tests/ITE.spec.ts tests/security-access-controls.spec.ts --headed",
     "test:modules": "playwright test tests/ai-recommendation-risk-register.spec.ts tests/ar-validation-receipts.spec.ts tests/client-payment-workflow.spec.ts tests/payment-reconciliation-reports.spec.ts tests/security-access-controls.spec.ts",
     "test:report": "playwright show-report",
     "test:e2e:debug": "playwright test --debug"

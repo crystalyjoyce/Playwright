@@ -1,13 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
-const REPO_ROOT = 'C:/Users/Joana/Downloads/PLAYWRIGHT/FOMS-System-Repository';
+const REPO_ROOT = 'C:/Users/Crystalyn Joyce/Downloads/tesda/FOMS-System-Repository';
 
 /**
  * Playwright Config for ITE Capstone E2E Regression Suite
  */
 export default defineConfig({
   testDir: path.join(__dirname, 'tests'),
+  testIgnore: '**/tests/example.spec.ts',
   globalSetup: path.join(__dirname, 'tests/config/globalSetup.ts'),
   timeout: 60000,
   expect: {
@@ -36,10 +37,10 @@ export default defineConfig({
   /* Auto-start local dev servers with explicit host binding and strict port */
   webServer: [
     {
-      command: 'npx vite --host 0.0.0.0 --port 5173',
+      command: 'npx vite --host 0.0.0.0 --port 5176 --strictPort',
       cwd: path.resolve(REPO_ROOT, 'foms-frontend'),
-      url: 'http://localhost:5173',
-      reuseExistingServer: true,
+      url: 'http://localhost:5176',
+      reuseExistingServer: false,
       timeout: 120000,
     },
     {

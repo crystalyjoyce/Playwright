@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { join } from 'path';
 import { APP_URLS } from './config/appUrls';
+import { loginToSpeedPay } from './config/speedpayAuth';
+
+test.use({ launchOptions: { slowMo: 200 } });
 
 test('Validate client portal login error messages', async ({ page }) => {
   await test.step('Navigate to SpeedPay login page', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
+    await page.goto(`${APP_URLS.speedpay}/login`);
   });
   
   const clientIdInput = page.locator('input[placeholder*="CL-"], input[placeholder*="ID"], input[type="text"]').first();
@@ -11,36 +15,39 @@ test('Validate client portal login error messages', async ({ page }) => {
   const loginBtn = page.getByRole('button', { name: /LOG IN|Sign In/i });
 
   await test.step('Check empty credentials validation error', async () => {
-    await clientIdInput.click().catch(() => {});
-    await passwordInput.click().catch(() => {});
-    await loginBtn.click().catch(() => {});
+    await loginBtn.click();
+    await expect(page.getByText('Client ID is required.', { exact: true })).toBeVisible();
+    await expect(page.locator('.tb-toast-item')).toHaveCount(0);
   });
 
   await test.step('Check invalid Client ID error alert', async () => {
-    await clientIdInput.fill('CL-999-WRONG').catch(() => {});
-    await passwordInput.fill('Password@123').catch(() => {});
-    await loginBtn.click().catch(() => {});
+    await clientIdInput.fill('CL-999-WRONG');
+    await passwordInput.fill('Password@123');
+    await loginBtn.click();
+    await expect(page.getByRole('alert')).toHaveText('Client ID not found.');
+    await expect(page.locator('.tb-toast-item')).toHaveCount(0);
   });
 
   await test.step('Check wrong password error alert', async () => {
-    await clientIdInput.fill('CL-007').catch(() => {});
-    await passwordInput.fill('WrongPass999!').catch(() => {});
-    await loginBtn.click().catch(() => {});
+    await clientIdInput.fill('CL-007');
+    await passwordInput.fill('WrongPass999!');
+    await loginBtn.click();
+    await expect(page.getByRole('alert')).toHaveText('Invalid password.');
+    await expect(page.locator('.tb-toast-item')).toHaveCount(0);
   });
 
   await test.step('Login with valid CL-007 account', async () => {
-    await clientIdInput.fill('CL-007').catch(() => {});
-    await passwordInput.fill('Password@123').catch(() => {});
-    await loginBtn.click().catch(() => {});
+    await clientIdInput.fill('CL-007');
+    await passwordInput.fill('Password@123');
+    await loginBtn.click();
+    await expect(page.getByRole('link', { name: /My Invoices/i })).toBeVisible();
+    await expect(page.locator('.tb-toast-item').filter({ hasText: /Client ID not found|Invalid password|required/i })).toHaveCount(0);
   });
 });
 
 test('Search and filter invoices', async ({ page }) => {
   await test.step('Authenticate SpeedPay client account', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
-    await page.locator('input[placeholder*="CL-"], input[type="text"]').first().fill('CL-007').catch(() => {});
-    await page.locator('input[type="password"]').first().fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: /LOG IN|Sign In/i }).click().catch(() => {});
+    await loginToSpeedPay(page);
   });
 
   await test.step('Open My Invoices tab and inspect invoice list', async () => {
@@ -55,64 +62,54 @@ test('Search and filter invoices', async ({ page }) => {
   });
 });
 
-test('Submit payment with GCash payment reference', async ({ page }) => {
-  await test.step('Authenticate SpeedPay client account', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
-    await page.locator('input[placeholder*="CL-"], input[type="text"]').first().fill('CL-007').catch(() => {});
-    await page.locator('input[type="password"]').first().fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: /LOG IN|Sign In/i }).click().catch(() => {});
-  });
+test('Submit a demo payment and verify it is pending validation', async ({ page }) => {
+  const paymentReference = 'TEST-PAYREF-PLAYWRIGHT';
 
-  await test.step('Navigate to My Invoices page', async () => {
-    await page.getByRole('link', { name: /My Invoices|Invoices/i }).click().catch(() => {});
-  });
+  await page.route('**/api/speedpay/initiate-invoice', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      checkoutUrl: 'http://localhost/mock-checkout',
+      referenceOrNumber: paymentReference,
+    }),
+  }));
+  await page.route('**/api/speedpay/submissions', route => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true }),
+  }));
 
-  await test.step('Select invoice row and open payment modal', async () => {
-    const rowBtn = page.getByRole('row', { name: /PLD-2026-0009/i }).getByRole('button').first();
-    if (await rowBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await rowBtn.click().catch(() => {});
-    }
-  });
+  await loginToSpeedPay(page);
+  await page.getByRole('link', { name: /My Invoices|Invoices/i }).click();
 
-  await test.step('Select GCash as payment option', async () => {
-    const gcashOpt = page.getByText('GCash').first();
-    if (await gcashOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await gcashOpt.click().catch(() => {});
-    }
-  });
+  const payNowButton = page.getByRole('button', { name: /Pay now/i }).first();
+  await expect(payNowButton).toBeVisible();
+  const invoiceRow = payNowButton.locator('xpath=ancestor::tr');
+  const invoiceId = (await invoiceRow.locator('td').first().innerText()).trim();
+  await payNowButton.click();
+  await expect(page.getByText('PAYMENT DETAILS')).toBeVisible();
 
-  await test.step('Click Pay via PayMongo checkout button', async () => {
-    const payBtn = page.getByRole('button', { name: /Pay via PayMongo/i });
-    if (await payBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await payBtn.click().catch(() => {});
-    }
-  });
+  await page.getByRole('button', { name: /Pay via PayMongo/i }).click();
+  await expect(page.getByRole('heading', { name: 'PayMongo Checkout' })).toBeVisible();
+  await page.getByRole('button', { name: /Simulate Payment Success/i }).click();
 
-  await test.step('Attach screenshot and submit payment proof', async () => {
-    const refInput = page.locator('input[placeholder*="Reference"], input[placeholder*="REF"]').first();
-    if (await refInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await refInput.fill('REF-2026-0009').catch(() => {});
-    }
+  await expect(page.getByRole('heading', { name: 'Upload Proof of Payment' })).toBeVisible();
+  await page.locator('input[type="file"]').last().setInputFiles(join(__dirname, 'speedpay.png'));
+  await expect(page.getByText(/Image is clear and the payment amount matches the invoice/i)).toBeVisible();
+  await page.getByRole('button', { name: 'Submit Proof of Payment' }).click();
 
-    await page.locator('input[type="file"]').setInputFiles('752441233_1752934566159360_3334055542906429067_n.png').catch(() => {});
+  const main = page.getByRole('main');
+  await expect(main.getByRole('heading', { name: 'Payment Submitted' })).toBeVisible();
+  await main.getByRole('button', { name: 'View Payment History' }).click();
 
-    await page.waitForTimeout(1000);
-    const artifactPath = 'C:/Users/Joana/.gemini/antigravity/brain/9797cd32-e4e2-4c35-8b75-8bf69c5220ea/paymongo_process.png';
-    await page.screenshot({ path: artifactPath, fullPage: true }).catch(() => {});
-
-    const submitBtn = page.getByRole('button', { name: 'Submit Payment' });
-    if (await submitBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await submitBtn.click().catch(() => {});
-    }
-  });
+  const paymentRow = page.getByRole('row').filter({ hasText: paymentReference });
+  await expect(paymentRow).toContainText(invoiceId);
+  await expect(paymentRow).toContainText('Pending Validation');
 });
 
 test('Check payment history status', async ({ page }) => {
   await test.step('Authenticate SpeedPay client account', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
-    await page.locator('input[placeholder*="CL-"], input[type="text"]').first().fill('CL-007').catch(() => {});
-    await page.locator('input[type="password"]').first().fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: /LOG IN|Sign In/i }).click().catch(() => {});
+    await loginToSpeedPay(page);
   });
 
   await test.step('Open Payment History page', async () => {
@@ -132,10 +129,7 @@ test('Check payment history status', async ({ page }) => {
 
 test('Validate payment method options selection', async ({ page }) => {
   await test.step('Authenticate SpeedPay client account', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
-    await page.locator('input[placeholder*="CL-"], input[type="text"]').first().fill('CL-007').catch(() => {});
-    await page.locator('input[type="password"]').first().fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: /LOG IN|Sign In/i }).click().catch(() => {});
+    await loginToSpeedPay(page);
   });
 
   await test.step('Navigate to My Invoices page', async () => {
@@ -159,10 +153,7 @@ test('Validate payment method options selection', async ({ page }) => {
 
 test('Verify seamless navigation between portal sections', async ({ page }) => {
   await test.step('Authenticate SpeedPay client account', async () => {
-    await page.goto(`${APP_URLS.speedpay}/login`).catch(() => {});
-    await page.locator('input[placeholder*="CL-"], input[type="text"]').first().fill('CL-007').catch(() => {});
-    await page.locator('input[type="password"]').first().fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: /LOG IN|Sign In/i }).click().catch(() => {});
+    await loginToSpeedPay(page);
   });
 
   await test.step('Navigate to My Invoices page', async () => {

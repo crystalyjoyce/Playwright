@@ -1,26 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { APP_URLS } from './config/appUrls';
+import { loginToSpeedPay } from './config/speedpayAuth';
+
+test.use({ launchOptions: { slowMo: 200 } });
 
 test('ITE PLAYWRIGHT', async ({ page }) => {
   test.setTimeout(60000);
 
   // --- ACT I: SPEEDPAY CLIENT PORTAL ---
-  await page.goto(`${APP_URLS.speedpay}/`);
-  
-  const clientInput = page.getByRole('textbox', { name: 'Client ID' });
-  const pwdInput = page.getByRole('textbox', { name: 'Password' });
-
-  if (await clientInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await clientInput.fill('CL-999').catch(() => {});
-    await pwdInput.fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: 'Log In' }).click().catch(() => {});
-
-    await clientInput.fill('CL-007').catch(() => {});
-    await pwdInput.fill('Password@123').catch(() => {});
-    await page.getByRole('button', { name: 'Log In' }).click().catch(() => {});
-  }
+  await loginToSpeedPay(page);
 
   const invoicesLink = page.getByRole('link', { name: 'My Invoices' });
+  await expect(invoicesLink).toBeVisible({ timeout: 10000 });
   if (await invoicesLink.isVisible({ timeout: 2000 }).catch(() => false)) {
     await invoicesLink.click().catch(() => {});
   }
@@ -66,13 +57,12 @@ test('ITE PLAYWRIGHT', async ({ page }) => {
   const empInput = page1.getByRole('textbox', { name: 'Employee ID' });
   const empPwdInput = page1.getByRole('textbox', { name: 'Password' });
 
-  if (await empInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await empInput.fill('EMP-002').catch(() => {});
-    await empPwdInput.fill('Password@123').catch(() => {});
-    await page1.getByRole('button', { name: 'Log In' }).click().catch(() => {});
-  }
+  await empInput.fill('EMP-002');
+  await empPwdInput.fill('Password@123');
+  await page1.getByRole('button', { name: /Log In|Sign In to FOMS/i }).click();
 
   const arLink = page1.getByRole('link', { name: /Accounts Receivable/i });
+  await expect(arLink).toBeVisible({ timeout: 10000 });
   if (await arLink.isVisible({ timeout: 2000 }).catch(() => false)) {
     await arLink.click().catch(() => {});
   }

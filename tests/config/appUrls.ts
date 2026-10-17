@@ -4,7 +4,7 @@
  */
 
 export const APP_URLS = {
-  foms: process.env.FOMS_URL || 'http://localhost:5173',
+  foms: process.env.FOMS_URL || 'http://localhost:5176',
   speedpay: process.env.SPEEDPAY_URL || 'http://localhost:5174',
   ai: process.env.AI_URL || 'http://localhost:5175',
   fomsBackend: process.env.FOMS_BACKEND_URL || 'http://localhost:5000',
