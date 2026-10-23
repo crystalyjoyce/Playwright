@@ -1,9 +1,17 @@
 {
   "name": "playwright",
   "version": "1.0.0",
-  "description": "",
+  "description": "Playwright end-to-end tests for FOMS, SpeedPay, and AI workflows",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:collab": "playwright test TESTS/ai-layer.spec.ts TESTS/ai-duplication.spec.ts TESTS/ai-recommendation-risk-register.spec.ts TESTS/client-payment-workflow.spec.ts TESTS/ITE.spec.ts TESTS/login-accounts.spec.ts TESTS/security-access-controls.spec.ts --project=chromium",
+    "test:collab:headed": "playwright test TESTS/ai-layer.spec.ts TESTS/ai-duplication.spec.ts TESTS/ai-recommendation-risk-register.spec.ts TESTS/client-payment-workflow.spec.ts TESTS/ITE.spec.ts TESTS/login-accounts.spec.ts TESTS/security-access-controls.spec.ts --headed --project=chromium",
+    "test:modules": "playwright test TESTS/ai-recommendation-risk-register.spec.ts TESTS/client-payment-workflow.spec.ts TESTS/security-access-controls.spec.ts --project=chromium",
+    "test:report": "playwright show-report",
+    "test:e2e:debug": "playwright test --debug"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

@@ -52,6 +52,12 @@ async function loginAs(page: Page, employeeId: string, password = 'Password@123'
   const loginButton = page.getByRole('button', { name: /LOG IN TO SYSTEM/i });
   await expect(loginButton).toBeEnabled();
   await loginButton.click();
+  await page.waitForURL(
+    employeeId === AUTH_USERS.clientUnauthorized.empId
+      ? '**/unauthorized'
+      : '**/ai/dashboard',
+    { timeout: 15000 }
+  );
 }
 
 test.describe('FOMS AI Layer Dashboard E2E Test Suite', () => {
@@ -107,7 +113,7 @@ test.describe('FOMS AI Layer Dashboard E2E Test Suite', () => {
 
     // 4. Verify Charts and Visualizations
     await expect(page.getByText('Collection & Outstanding Receivables Analytics')).toBeVisible();
-    await expect(page.getByText('Accounts Aging Distribution')).toBeVisible();
+    await expect(page.getByText('Receivable Aging Distribution')).toBeVisible();
 
     // 5. Verify Lower Grid Sections (Priority Attention Accounts & Recent Activity Logs)
     await expect(page.getByText('Priority Accounts Requiring Attention')).toBeVisible();
@@ -178,15 +184,8 @@ test.describe('FOMS AI Layer Dashboard E2E Test Suite', () => {
     await page.waitForURL('**/ai/dashboard', { timeout: 15000 });
 
     // 1. Verify duplicate alert counters from KPI Cards
-    const totalAlertsCard = page.locator('.kpi-grid').locator('.card, [class*="status-card"]').filter({
-      hasText: /Total Duplicate Alerts/i
-    }).first();
-    await expect(totalAlertsCard).toBeVisible();
-
-    const exactMatchCard = page.locator('.kpi-grid').locator('.card, [class*="status-card"]').filter({
-      hasText: /Exact Match Alerts/i
-    }).first();
-    await expect(exactMatchCard).toBeVisible();
+    await expect(page.locator('.kpi-grid').getByText('Total Duplicate Alerts', { exact: true })).toBeVisible();
+    await expect(page.locator('.kpi-grid').getByText('Exact Match Alerts', { exact: true })).toBeVisible();
 
     // 2. Navigate to Flagged Duplicates List
     await page.goto(`${BASE_URL}/ai/duplicate-alerts?tab=flagged-dups`, { waitUntil: 'domcontentloaded' });
@@ -219,12 +218,15 @@ test.describe('FOMS AI Layer Dashboard E2E Test Suite', () => {
     const sampleWaybill = `WBL-TEST-${Date.now().toString().slice(-4)}`;
     
     // Check direct duplicate analysis endpoint behavior
+    const token = await page.evaluate(() => localStorage.getItem('foms_ai_token'));
+    expect(token).toBeTruthy();
     const checkResponse = await page.request.post(`${BASE_URL}/api/ai/duplicates/waybill`, {
       data: {
         waybillNumber: sampleWaybill,
         clientId: 'CLIENT-001'
       },
       headers: {
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -292,8 +294,8 @@ test.describe('FOMS AI Layer Dashboard E2E Test Suite', () => {
   // TEST CASE 8: Error Handling & Offline AI Service State
   // ============================================================================
   test('Test Case 8 — AI Layer Offline & Error State Handling', async ({ page }) => {
-    // Intercept summary endpoint to simulate an AI sidecar service outage
-    await page.route('**/api/ai/dashboard/summary', route => {
+    // Fail every dashboard endpoint to simulate a complete AI sidecar outage
+    await page.route('**/api/ai/dashboard/**', route => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',

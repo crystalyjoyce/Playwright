@@ -1,57 +1,81 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+
+const REPO_ROOT = process.env.FOMS_REPO_ROOT
+  || path.resolve(__dirname, '..', '..', 'tesda', 'FOMS-System-Repository');
 
 export default defineConfig({
-  testDir: '.',
-  testMatch: '**/*.spec.ts',
-
-  // Run tests in parallel
-  fullyParallel: false,
-
-  // Local testing
-  forbidOnly: false,
-
-  // No retry for now
-  retries: 0,
-
-  // One test at a time
-  workers: 1,
-
-  // HTML report
-  reporter: 'html',
-
-  use: {
-    // Base URL for web navigation
-    baseURL: 'http://localhost:5175',
-
-    // Optional slowMo for demo runs, default 0 for faster test executions
-    launchOptions: {
-      slowMo: process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 0,
-    },
-
-    // Save trace when needed
-    trace: 'on-first-retry',
+  testDir: __dirname,
+  testMatch: [
+    'tests/**/*.spec.ts',
+    'TESTS/**/*.spec.ts',
+    'ai layer/**/*.spec.ts',
+    'collection/**/*.spec.ts',
+    'speedpay/**/*.spec.ts',
+  ],
+  testIgnore: '**/example.spec.ts',
+  globalSetup: path.join(__dirname, 'tests/config/globalSetup.ts'),
+  timeout: 60000,
+  expect: {
+    timeout: 10000
   },
-
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: 1,
+  reporter: [['html', { open: 'never' }], ['list']],
+  use: {
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
+    baseURL: 'http://localhost:5175',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
-
     {
       name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
+      use: { ...devices['Desktop Firefox'] },
     },
-
     {
       name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-      },
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
+  webServer: [
+    {
+      command: process.platform === 'win32'
+        ? 'py -3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000'
+        : 'python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000',
+      cwd: path.resolve(REPO_ROOT, 'ai-service'),
+      url: 'http://127.0.0.1:8000/health',
+      env: { AI_SEED_DEMO_USERS: 'true' },
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    {
+      command: 'npx vite --host 0.0.0.0 --port 5176 --strictPort',
+      cwd: path.resolve(REPO_ROOT, 'foms-frontend'),
+      url: 'http://localhost:5176',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    {
+      command: 'npx vite --host 0.0.0.0 --port 5174',
+      cwd: path.resolve(REPO_ROOT, 'speedpay-portal'),
+      url: 'http://localhost:5174',
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+    {
+      command: 'npx vite --host 0.0.0.0 --port 5175',
+      cwd: path.resolve(REPO_ROOT, 'ai-frontend'),
+      url: 'http://localhost:5175',
+      reuseExistingServer: true,
+      timeout: 120000,
     },
   ],
 });
