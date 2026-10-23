@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
-const REPO_ROOT = 'C:/Users/Crystalyn Joyce/Downloads/tesda/FOMS-System-Repository';
+const REPO_ROOT = process.env.FOMS_REPO_ROOT
+  || path.resolve(__dirname, '..', '..', 'tesda', 'FOMS-System-Repository');
 
 export default defineConfig({
   testDir: __dirname,
@@ -46,10 +47,20 @@ export default defineConfig({
   ],
   webServer: [
     {
+      command: process.platform === 'win32'
+        ? 'py -3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000'
+        : 'python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000',
+      cwd: path.resolve(REPO_ROOT, 'ai-service'),
+      url: 'http://127.0.0.1:8000/health',
+      env: { AI_SEED_DEMO_USERS: 'true' },
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    },
+    {
       command: 'npx vite --host 0.0.0.0 --port 5176 --strictPort',
       cwd: path.resolve(REPO_ROOT, 'foms-frontend'),
       url: 'http://localhost:5176',
-      reuseExistingServer: false,
+      reuseExistingServer: !process.env.CI,
       timeout: 120000,
     },
     {
